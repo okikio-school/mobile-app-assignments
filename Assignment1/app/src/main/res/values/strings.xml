@@ -33,5 +33,11 @@
         <item>5 Year Open Variable Rate Mortgage 7.6%</item>
     </string-array>
 
-    <string name="label_amortization_period">Amortization period</string>
+    <string name="label_amortization_period">Amortization period (years)</string>
+    <string name="default_amortization_period">25</string>
+
+    <string name="text_calculate_mortgage_button">Calculate</string>
+
+    <string name="label_monthly_mortgage_payments">$</string>
+    <string name="default_mortgage_payments">0</string>
 </resources>
