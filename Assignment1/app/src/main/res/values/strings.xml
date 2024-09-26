@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Assignment1</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="label_mortgage_principal">Mortgage principal amount</string>
+    <string name="hint_mortgage_principal">Enter amount</string>
+    <string name="help_mortgage_principal">This is usually the purchase price minus your down payment.</string>
+
+    <string name="label_interest_rate">Interest rate</string>
+    <string-array name="interest_rates__special_offers">
+        <item>3 Year Fixed Rate Mortgage 4.84%</item>
+        <item>5 Year Fixed Rate Mortgage 4.74%</item>
+    </string-array>
+    <string-array name="interest_rates__fixed_rate_mortgages">
+        <item>6 Month Convertible 7.84%</item>
+        <item>1 Year Closed 7.74%</item>
+        <item>1 Year Open 8%</item>
+        <item>2 Year Closed 7.34%</item>
+        <item>3 Year Closed 6.94%</item>
+        <item>4 Year Closed 6.74%</item>
+        <item>5 Year Closed 6.79%</item>
+        <item>6 Year Closed 6.99%</item>
+        <item>7 Year Closed 7.1%</item>
+        <item>10 Year Closed 7.25%</item>
+    </string-array>
+    <string-array name="interest_rates__variable_rate_mortgages">
+        <item>5 Year Closed Variable Rate Mortgage 6.14%</item>
+        <item>5 Year Open Variable Rate Mortgage 7.6%</item>
+    </string-array>
+
+    <string name="label_amortization_period">Amortization period</string>
+</resources>
