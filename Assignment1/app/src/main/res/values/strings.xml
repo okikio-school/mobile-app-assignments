@@ -7,6 +7,8 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
+    <string name="open_emi_calculator">Open EMI Calculator</string>
+
     <string name="label_mortgage_principal">Mortgage principal amount ($)</string>
     <string name="hint_mortgage_principal">Enter amount</string>
     <string name="help_mortgage_principal">This is usually the purchase price minus your down payment.</string>

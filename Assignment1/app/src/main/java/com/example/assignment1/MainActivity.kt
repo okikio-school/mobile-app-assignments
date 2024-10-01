@@ -1,5 +1,7 @@
 package com.example.assignment1
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
@@ -9,6 +11,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import androidx.navigation.fragment.NavHostFragment
 import com.example.assignment1.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -24,14 +27,19 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
+        // Ensure that the NavHostFragment is correctly initialized
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
+        val navController = navHostFragment.navController
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
         binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
+            val googleMapIntent = Uri.parse("google.streetview:cbll=46.434382,10.0113988")
+            val intent = Intent(Intent.ACTION_VIEW, googleMapIntent)
+            intent.setPackage("com.google.android.apps.maps")
+
+            startActivity(intent)
         }
     }
 
@@ -52,8 +60,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
+        return navHostFragment.navController.navigateUp() || super.onSupportNavigateUp()
     }
 }
