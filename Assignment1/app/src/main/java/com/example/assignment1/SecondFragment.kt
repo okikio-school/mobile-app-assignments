@@ -46,10 +46,6 @@ class SecondFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
-        }
-
         val specialOffers = resources.getStringArray(R.array.interest_rates__special_offers)
         val fixedRateMortgages =
             resources.getStringArray(R.array.interest_rates__fixed_rate_mortgages)
