@@ -34,7 +34,8 @@ class MainActivity : AppCompatActivity() {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        binding.fab.setOnClickListener { view ->
+        binding.fab.setOnClickListener {
+            // Create an intent to open Google Maps
             val googleMapIntent = Uri.parse("google.streetview:cbll=46.434382,10.0113988")
             val intent = Intent(Intent.ACTION_VIEW, googleMapIntent)
             intent.setPackage("com.google.android.apps.maps")

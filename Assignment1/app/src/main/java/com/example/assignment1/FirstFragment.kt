@@ -35,6 +35,7 @@ class FirstFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonFirst.setOnClickListener {
+            // Open the EMI Calculator Fragment
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
     }
