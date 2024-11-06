@@ -2,126 +2,243 @@ package com.example.assignment2
 
 import android.content.ContentValues
 import android.content.Context
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 private const val DATABASE_NAME = "MAP"
-private const val TABLE_NAME = "LOCATIONS"
+private const val LOCATIONS_TABLE = "LOCATIONS"
 
 private const val HIDDEN_COL = "rowid"
-private const val COL_1 = "ID"
-private const val COL_2 = "TITLE"
-private const val COL_3 = "SUBTITLE"
-private const val COL_4 = "DESCRIPTION"
-private const val COL_5 = "COLOR"
-private const val COL_6 = "IMAGE"
+private const val COL_ID = "ID"
+private const val COL_ADDR = "ADDRESS"
+private const val COL_LONGITUDE = "LONGITUDE"
+private const val COL_LATITUDE = "LATITUDE"
 
-class DatabaseHelper(context: Context?) : SQLiteOpenHelper(context, DATABASE_NAME, null, 2) {
+// Used to identify if the database has been seeded
+private const val FLAGS_TABLE = "FLAGS"
+private const val FLAG_KEY_COLUMN = "FLAG"
+private const val FLAG_VALUE_COLUMN = "VALUE"
+
+private val ADDRS_ABBRIVIATIONS = mapOf(
+    "n" to "North",
+    "rd" to "Road",
+    "st" to "Street",
+    "ave" to "Avenue",
+    "blvd" to "Boulevard",
+    "dr" to "Drive",
+    "pl" to "Place",
+    "ct" to "Court",
+    "ln" to "Lane",
+    "pkwy" to "Parkway",
+    "cir" to "Circle",
+    "trl" to "Trail",
+    "ter" to "Terrace",
+    "hwy" to "Highway",
+    "expwy" to "Expressway",
+    "pk" to "Park",
+    "plz" to "Plaza",
+    "sq" to "Square",
+    "ctr" to "Center",
+    "bldg" to "Building",
+    "ste" to "Suite",
+    "apt" to "Apartment",
+    "fl" to "Floor",
+    "unit" to "Unit",
+    "dept" to "Department",
+    "po" to "Post Office"
+)
+
+/**
+ * Reads and parses a CSV file from the res/raw folder.
+ *
+ * @param context The Android context to access resources.
+ * @param fileName The resource ID of the CSV file (e.g., R.raw.data).
+ * @return A list of rows, where each row is a list of strings representing columns.
+ */
+private fun readCsvFromRaw(context: Context, fileName: Int): List<List<String>> {
+    val result = mutableListOf<List<String>>()
+    // Open the resource as an InputStream
+    val inputStream = context.resources.openRawResource(fileName)
+    BufferedReader(InputStreamReader(inputStream)).use { reader ->
+        // Read each line from the CSV
+        reader.forEachLine { line ->
+            // Split by commas and trim spaces
+            val row = line.split(",").map { it.trim() }
+            result.add(row)
+        }
+    }
+    return result
+}
+
+class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
         // Create a virtual table to store the data required for full-text search
         // Note: virtual tables only support TEXT data types for columns,
         // in addition to the `rowid` column which acts as an autoincrement primary key integer
-        db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS $TABLE_NAME USING fts4($COL_2, $COL_3, $COL_4, $COL_5, $COL_6)");
+        db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS $LOCATIONS_TABLE USING fts4($COL_ADDR, $COL_LONGITUDE, $COL_LATITUDE)");
+
+        // Create a flags table to track if the database has been seeded
+        db.execSQL("CREATE TABLE IF NOT EXISTS $FLAGS_TABLE ($FLAG_KEY_COLUMN TEXT PRIMARY KEY, $FLAG_VALUE_COLUMN TEXT)");
+
+        // Check if the database is already seeded
+        if (!isDatabaseSeeded(db)) {
+            // Seed the database from the CSV file
+            seedDatabaseFromCsv(db, R.raw.gta_locations)
+
+            // Mark database as seeded
+            flagDatabaseAsSeeded(db)
+        }
+    }
+
+    /**
+     * Checks if the database has already been seeded.
+     *
+     * @param db The writable database instance.
+     * @return True if the database is already seeded, false otherwise.
+     */
+    private fun isDatabaseSeeded(db: SQLiteDatabase): Boolean {
+        val cursor = db.rawQuery("SELECT $FLAG_VALUE_COLUMN FROM $FLAGS_TABLE WHERE $FLAG_KEY_COLUMN = 'seeded'", null)
+        val isSeeded = cursor.moveToFirst() && cursor.getString(0) == "true"
+        cursor.close()
+        return isSeeded
+    }
+
+    /**
+     * Marks the database as seeded by inserting a flag into the metadata table.
+     *
+     * @param db The writable database instance.
+     */
+    private fun flagDatabaseAsSeeded(db: SQLiteDatabase) {
+        val values = ContentValues().apply {
+            put(FLAG_KEY_COLUMN, "seeded")
+            put(FLAG_VALUE_COLUMN, "true")
+        }
+        db.insert(FLAGS_TABLE, null, values)
+    }
+
+    /**
+    * Seeds the database with data from a CSV file in the res/raw directory.
+    *
+    * @param db The writable database instance to insert data into.
+    * @param csvResourceId The resource ID of the CSV file (e.g., R.raw.gta_locations).
+    */
+    private fun seedDatabaseFromCsv(db: SQLiteDatabase, csvResourceId: Int) {
+        val csvData = readCsvFromRaw(context, csvResourceId)
+        for (row in csvData) {
+            // Ensure the row has enough data fields (address, longitude, latitude)
+            if (row.size >= 3) {
+                val contentValues = ContentValues().apply {
+                    put(COL_ADDR, expandAddrsAbbriviations(row[0])) // Expand address abbreviations
+                    put(COL_LONGITUDE, row[1])
+                    put(COL_LATITUDE, row[2])
+                }
+                db.insert(LOCATIONS_TABLE, null, contentValues)
+            }
+        }
+    }
+
+    /**
+     * Expands abbreviations in the address based on the ADDRS_ABBRIVIATIONS map.
+     *
+     * @param address The raw address string with abbreviations.
+     * @return The expanded address string.
+     */
+    private fun expandAddrsAbbriviations(address: String): String {
+        // Split the address into individual words
+        val words = address.split(" ")
+        val expandedWords = mutableListOf<String>()
+
+        // Loop through each word to check for abbreviations
+        for (word in words) {
+            // Convert the word to lowercase for case-insensitive matching
+            val lower = word.lowercase()
+
+            // If the word is in ADDRS_ABBRIVIATIONS, replace it; otherwise, keep it as is
+            val expandedWord = if (ADDRS_ABBRIVIATIONS.containsKey(lower)) {
+                ADDRS_ABBRIVIATIONS[lower]!!
+            } else {
+                word
+            }
+            expandedWords.add(expandedWord)
+        }
+
+        // Join all expanded words back into a single string with spaces
+        val resultAddress = expandedWords.joinToString(" ")
+        return resultAddress
     }
 
     override fun onUpgrade(db: SQLiteDatabase, old: Int, new: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME");
+        db.execSQL("DROP TABLE IF EXISTS $LOCATIONS_TABLE");
         onCreate(db);
     }
 
     fun listData(): MutableList<Map<String, Any>> {
-        return query("SELECT $HIDDEN_COL as $COL_1, * FROM $TABLE_NAME")
+        return query("SELECT $HIDDEN_COL as $COL_ID, * FROM $LOCATIONS_TABLE")
     }
 
     fun getData(id: String): MutableList<Map<String, Any>> {
-        return query("SELECT $HIDDEN_COL as $COL_1, * FROM $TABLE_NAME WHERE $COL_1 = ?", arrayOf(id))
+        return query("SELECT $HIDDEN_COL as $COL_ID, * FROM $LOCATIONS_TABLE WHERE $COL_ID = ?", arrayOf(id))
     }
 
     // Search query using the MATCH operator to perform full-text search
     fun searchData(queryString: String): MutableList<Map<String, Any>> {
         val fetchQuery = "%$queryString%"
-        return query("SELECT $HIDDEN_COL as $COL_1, * FROM $TABLE_NAME WHERE $COL_2 LIKE ? OR $COL_3 LIKE ? OR $COL_4 LIKE ?",
+        return query("SELECT $HIDDEN_COL as $COL_ID, * FROM $LOCATIONS_TABLE WHERE $COL_ADDR LIKE ? OR $COL_LONGITUDE LIKE ? OR $COL_LATITUDE LIKE ?",
             arrayOf(fetchQuery, fetchQuery, fetchQuery))
     }
 
     private fun query(query: String, params: Array<String> = emptyArray()): MutableList<Map<String, Any>> {
-        val notesRecord = mutableListOf<Map<String, Any>>()
+        val locationList = mutableListOf<Map<String, Any>>()
         val db = writableDatabase
 
         val cursor = db.rawQuery(query, params)
         if (cursor.moveToFirst()) {
             do {
-                val note = mapOf(
-                    "id" to cursor.getInt(cursor.getColumnIndexOrThrow(COL_1)),
-                    "title" to cursor.getString(cursor.getColumnIndexOrThrow(COL_2)),
-                    "subtitle" to cursor.getString(cursor.getColumnIndexOrThrow(COL_3)),
-                    "description" to cursor.getString(cursor.getColumnIndexOrThrow(COL_4)),
-                    "color" to cursor.getString(cursor.getColumnIndexOrThrow(COL_5)),
-                    "image" to cursor.getString(cursor.getColumnIndexOrThrow(COL_6))
+                val location = mapOf(
+                    "id" to cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID)),
+                    "address" to cursor.getString(cursor.getColumnIndexOrThrow(COL_ADDR)),
+                    "longitude" to cursor.getString(cursor.getColumnIndexOrThrow(COL_LONGITUDE)),
+                    "latitude" to cursor.getString(cursor.getColumnIndexOrThrow(COL_LATITUDE)),
                 )
-                notesRecord.add(note)
+                locationList.add(location)
             } while (cursor.moveToNext())
         }
 
         cursor.close()
-        return notesRecord
+        return locationList
     }
 
-    fun insertData(title: String, subtitle: String, description: String, color: String, image: String? = null): Long {
-        if (title.isEmpty()) return -1L;
+    fun insertData(addr: String, longitude: String, latitude: String): Long {
+        if (addr.isEmpty()) return -1L;
 
         val db = writableDatabase;
         val values = ContentValues();
-        values.put(COL_2, title);
-        values.put(COL_3, subtitle);
-        values.put(COL_4, description);
-        values.put(COL_5, color);
+        values.put(COL_ADDR, expandAddrsAbbriviations(addr));
+        values.put(COL_LONGITUDE, longitude);
+        values.put(COL_LATITUDE, latitude);
 
-        if (!image.isNullOrEmpty()) {
-            values.put(COL_6, image);
-        }
-
-        val insertion = db.insert(TABLE_NAME, null, values);
+        val insertion = db.insert(LOCATIONS_TABLE, null, values);
         return insertion;
     }
 
-    fun updateData(id: String, title: String, subtitle: String, description: String, color: String): Boolean {
-        if (title.isEmpty()) return false;
+    fun updateData(id: String, addr: String, longitude: String, latitude: String): Boolean {
+        if (addr.isEmpty()) return false;
 
         val db = writableDatabase;
         val values = ContentValues();
-        values.put(COL_2, title);
-        values.put(COL_3, subtitle);
-        values.put(COL_4, description);
-        values.put(COL_5, color);
+        values.put(COL_ADDR, addr);
+        values.put(COL_LONGITUDE, longitude);
+        values.put(COL_LATITUDE, latitude);
 
-        val insertion = db.update(TABLE_NAME, values, "$HIDDEN_COL = ?", arrayOf(id));
-        return insertion > 0;
-    }
-
-    fun updateImage(id: String, image: String? = null): Boolean {
-        val db = writableDatabase;
-        val values = ContentValues();
-        if (!image.isNullOrEmpty()) {
-            values.put(COL_6, image);
-        }
-
-        val insertion = db.update(TABLE_NAME, values, "$HIDDEN_COL = ?", arrayOf(id));
-        return insertion > 0;
-    }
-
-    fun deleteImage(id: String): Boolean {
-        val db = writableDatabase;
-        val values = ContentValues();
-        values.put(COL_6, "");
-
-        val insertion = db.update(TABLE_NAME, values, "$HIDDEN_COL = ?", arrayOf(id));
+        val insertion = db.update(LOCATIONS_TABLE, values, "$HIDDEN_COL = ?", arrayOf(id));
         return insertion > 0;
     }
 
     fun deleteData(id: String): Boolean {
         val db = writableDatabase;
-        val deletion = db.delete(TABLE_NAME, "$HIDDEN_COL = ?", arrayOf(id));
+        val deletion = db.delete(LOCATIONS_TABLE, "$HIDDEN_COL = ?", arrayOf(id));
         return deletion > 0;
     }
 
