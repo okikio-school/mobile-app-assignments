@@ -20,9 +20,18 @@ private const val COL_LATITUDE = "LATITUDE"
 private const val FLAGS_TABLE = "FLAGS"
 private const val FLAG_KEY_COLUMN = "FLAG"
 private const val FLAG_VALUE_COLUMN = "VALUE"
-
 private val ADDRS_ABBRIVIATIONS = mapOf(
+    // Directional Abbreviations
     "n" to "North",
+    "s" to "South",
+    "e" to "East",
+    "w" to "West",
+    "ne" to "Northeast",
+    "nw" to "Northwest",
+    "se" to "Southeast",
+    "sw" to "Southwest",
+
+    // Street Type Abbreviations
     "rd" to "Road",
     "st" to "Street",
     "ave" to "Avenue",
@@ -37,17 +46,46 @@ private val ADDRS_ABBRIVIATIONS = mapOf(
     "ter" to "Terrace",
     "hwy" to "Highway",
     "expwy" to "Expressway",
-    "pk" to "Park",
-    "plz" to "Plaza",
     "sq" to "Square",
-    "ctr" to "Center",
+    "cres" to "Crescent",
+    "bypass" to "Bypass",
+    "way" to "Way",
+    "alcove" to "Alcove",
+    "bay" to "Bay",
+    "close" to "Close",
+    "cove" to "Cove",
+    "gate" to "Gate",
+    "green" to "Green",
+    "hill" to "Hill",
+    "mews" to "Mews",
+    "rise" to "Rise",
+    "row" to "Row",
+    "path" to "Path",
+    "ramp" to "Ramp",
+    "trail" to "Trail",
+
+    // Building and Unit Abbreviations
     "bldg" to "Building",
     "ste" to "Suite",
     "apt" to "Apartment",
     "fl" to "Floor",
     "unit" to "Unit",
     "dept" to "Department",
-    "po" to "Post Office"
+    "po" to "Post Office",
+    "rm" to "Room",
+    "bsmt" to "Basement",
+    "lobby" to "Lobby",
+    "ph" to "Penthouse",
+
+    // General Place Abbreviations
+    "ctr" to "Center",
+    "sq" to "Square",
+    "plz" to "Plaza",
+    "pk" to "Park",
+    "mall" to "Mall",
+    "harbour" to "Harbour",
+    "landing" to "Landing",
+    "terminal" to "Terminal"
 )
 
 /**
@@ -126,7 +164,9 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     */
     private fun seedDatabaseFromCsv(db: SQLiteDatabase, csvResourceId: Int) {
         val csvData = readCsvFromRaw(context, csvResourceId)
-        for (row in csvData) {
+        // Skip the header row
+        for (i in 1 until csvData.size) {
+            val row = csvData[i]
             // Ensure the row has enough data fields (address, longitude, latitude)
             if (row.size >= 3) {
                 val contentValues = ContentValues().apply {
@@ -145,7 +185,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
      * @param address The raw address string with abbreviations.
      * @return The expanded address string.
      */
-    private fun expandAddrsAbbriviations(address: String): String {
+    fun expandAddrsAbbriviations(address: String): String {
         // Split the address into individual words
         val words = address.split(" ")
         val expandedWords = mutableListOf<String>()
