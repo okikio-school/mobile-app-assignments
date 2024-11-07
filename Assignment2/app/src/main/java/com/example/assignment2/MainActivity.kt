@@ -86,10 +86,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun performSearch(query: String) {
         val myDB = DatabaseHelper(this@MainActivity)
-        val expandedQuery = myDB.expandAddrsAbbriviations(query)
         val searchResults = (
-            if (expandedQuery.isEmpty()) myDB.listData()
-            else myDB.searchData(expandedQuery)
+            if (query.isEmpty()) myDB.listData()
+            else myDB.searchData(query)
         );
 
         updateRecyclerView(searchResults)

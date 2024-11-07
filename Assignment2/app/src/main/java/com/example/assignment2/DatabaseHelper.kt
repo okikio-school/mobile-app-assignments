@@ -110,12 +110,12 @@ private fun readCsvFromRaw(context: Context, fileName: Int): List<List<String>> 
     return result
 }
 
-class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, 1) {
+class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
         // Create a virtual table to store the data required for full-text search
         // Note: virtual tables only support TEXT data types for columns,
         // in addition to the `rowid` column which acts as an autoincrement primary key integer
-        db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS $LOCATIONS_TABLE USING fts4($COL_ADDR, $COL_LONGITUDE, $COL_LATITUDE)");
+        db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS $LOCATIONS_TABLE USING fts5($COL_ADDR, $COL_LONGITUDE, $COL_LATITUDE)");
 
         // Create a flags table to track if the database has been seeded
         db.execSQL("CREATE TABLE IF NOT EXISTS $FLAGS_TABLE ($FLAG_KEY_COLUMN TEXT PRIMARY KEY, $FLAG_VALUE_COLUMN TEXT)");
@@ -211,6 +211,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     override fun onUpgrade(db: SQLiteDatabase, old: Int, new: Int) {
         db.execSQL("DROP TABLE IF EXISTS $LOCATIONS_TABLE");
+        db.execSQL("DROP TABLE IF EXISTS $FLAGS_TABLE");
         onCreate(db);
     }
 
@@ -224,9 +225,15 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     // Search query using the MATCH operator to perform full-text search
     fun searchData(queryString: String): MutableList<Map<String, Any>> {
-        val fetchQuery = "%$queryString%"
-        return query("SELECT $HIDDEN_COL as $COL_ID, * FROM $LOCATIONS_TABLE WHERE $COL_ADDR LIKE ? OR $COL_LONGITUDE LIKE ? OR $COL_LATITUDE LIKE ?",
-            arrayOf(fetchQuery, fetchQuery, fetchQuery))
+        val unabbriviatedQuery = expandAddrsAbbriviations(queryString);
+
+        // Expand the search query to include wildcard characters this should allow for better partial matching
+        val expansiveSearch = "%" + queryString.replace(Regex("\\s+"), "%") + "%"
+        val unabbriviatedSearch = "%" + unabbriviatedQuery.replace(Regex("\\s+"), "%") + "%"
+        println("Search query: $queryString -> $expansiveSearch -> $unabbriviatedQuery -> $unabbriviatedSearch")
+
+        return query("SELECT $HIDDEN_COL as $COL_ID, * FROM $LOCATIONS_TABLE WHERE $COL_ADDR LIKE ? OR $COL_ADDR LIKE ? OR $COL_LONGITUDE LIKE ? OR $COL_LATITUDE LIKE ?",
+            arrayOf(expansiveSearch, unabbriviatedSearch, expansiveSearch, expansiveSearch))
     }
 
     private fun query(query: String, params: Array<String> = emptyArray()): MutableList<Map<String, Any>> {

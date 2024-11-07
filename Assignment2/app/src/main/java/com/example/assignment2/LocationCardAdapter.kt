@@ -44,7 +44,6 @@ class LocationCardAdapter(private var itemList: MutableList<Map<String, Any>>) :
 
             // Attach the options to the intent as extras
             intent.putExtras(options)
-
             v.context.startActivity(intent)
         }
 

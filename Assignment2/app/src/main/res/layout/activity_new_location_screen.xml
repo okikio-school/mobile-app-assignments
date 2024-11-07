@@ -8,7 +8,6 @@
     android:layout_height="match_parent"
     tools:context=".NewLocationScreen">
 
-    <!-- Horizontal guideline for max width -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/materialToolbar2"
         android:layout_width="0dp"
