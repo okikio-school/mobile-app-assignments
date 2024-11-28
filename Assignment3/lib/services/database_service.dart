@@ -1,8 +1,6 @@
 import 'dart:io';
-
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart'; // For file path utilities
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._constructor();
@@ -75,32 +73,24 @@ class DatabaseService {
     // Get database instance
     final db = await database;
 
-    // Open the CSV file
+    // Open the CSV file and check if the CSV file exists
     final file = File(csvFilePath);
-
-    // Check if file exists
     if (!await file.exists()) {
       throw Exception("CSV file not found at $csvFilePath");
     }
 
-    // Read the CSV file line by line
+    // Read the CSV file line by line (really convenient method)
     final lines = await file.readAsLines();
 
     // Skip the header line and parse the remaining rows
     for (int i = 1; i < lines.length; i++) {
       final line = lines[i];
-      final values = line.split(','); // Assumes CSV is comma-separated
-
-      // Ensure each line has the correct number of columns
-      if (values.length < 2) {
-        throw Exception("Invalid data at line ${i + 1}: $line");
-      }
+      final values = line.split(','); // The CSV in this case is comma-separated
 
       // Extract values
-      final title = values[0].trim();
-      final cost = values[1].trim();
+      final title = values[1].trim();
+      final cost = values[2].trim();
 
-      // Insert into the database
       await db.insert(
         _foodItemsTableName,
         {

@@ -49,7 +49,7 @@ class _ScheduledMealViewState extends State<ScheduledMealView> {
                       return AlertDialog(
                         title: const Text("Are you sure?"),
                         content:
-                        Text("Scheduled Meal with food item '${widget.schedule.foodItemTitle}' will be deleted"),
+                        Text("Scheduled Meal with food item '${widget.schedule.itemName ?? "Empty Food Item"}' will be deleted"),
                         actions: [
                           TextButton(
                               onPressed: () {
@@ -79,9 +79,7 @@ class _ScheduledMealViewState extends State<ScheduledMealView> {
           padding: const EdgeInsets.all(15.0),
           child: Column(
             children: [
-              FoodItemsDropdown(
-                controller: itemId,
-              ),
+              FoodItemsDropdown(),
               TextFormField(
                 controller: dateController,
                 minLines: 5,
@@ -94,120 +92,36 @@ class _ScheduledMealViewState extends State<ScheduledMealView> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  if (imagePath != null)
-                    Image.file(
-                      File(imagePath!),
-                      width: 200,
-                      height: 200,
-                      fit: BoxFit.cover,
-                    ),
                 ],
               ),
             ],
           ),
         ),
       ),
-      persistentFooterButtons: [
-        Row(
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.colorize),
-                GestureDetector(
-                  onTap: () async {
-                    Color? color = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Select a Color'),
-                        content: SingleChildScrollView(
-                          child: Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              Colors.red,
-                              Colors.green,
-                              Colors.blue,
-                              Colors.yellow,
-                              Colors.orange,
-                              Colors.purple,
-                              Colors.pink,
-                              Colors.brown,
-                              Colors.amber,
-                              Colors.lightBlue,
-                              Colors.lightGreen,
-                              Colors.blueGrey,
-                            ]
-                                .map((color) => GestureDetector(
-                              onTap: () =>
-                                  Navigator.pop(context, color),
-                              child: Container(
-                                width: 25,
-                                height: 25,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  border: Border.all(),
-                                  borderRadius:
-                                  BorderRadius.circular(50),
-                                ),
-                              ),
-                            ))
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                    );
-                    if (color != null) {
-                      setState(() => selectedColor = color);
-                    }
-                  },
-                  child: Container(
-                    width: 25,
-                    height: 25,
-                    decoration: BoxDecoration(
-                        color: selectedColor,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(50)),
-                  ),
-                ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_a_photo),
-              onPressed: pickImage,
-            ),
-          ],
-        )
-      ],
       floatingActionButton: FloatingActionButton(
           onPressed: () {
             // Check if the title or content is empty
-            if (itemId.text.isEmpty &&
-                dateController.text.isEmpty) {
+            if (dateController.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text("Title or content must be provided.")),
+                    content: Text("Date must be provided.")),
               );
               return;
             }
 
             // Create the note object
             final note = ScheduledMeal(
-              title: itemId.text,
-              content: dateController.text,
-              color: selectedColor.value,
-              image: imagePath,
+              itemId: itemId,
+              date: DateTime(dateController.text),
+              cost: costPerDay.text,
             );
 
             // Save the note to the database and await the operation
             DatabaseService.instance.updateSchedule(
               widget.schedule.id!,
-              itemId.text,
-              dateController.text,
-              selectedColor.value,
-              imagePath,
+              itemId,
+              costPerDay.text,
+              DateTime(dateController.text),
             );
 
             // Notify HomeScreen and close the NewNotesScreen
