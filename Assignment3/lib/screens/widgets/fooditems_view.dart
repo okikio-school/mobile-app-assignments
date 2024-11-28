@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:note_me_v2/services/database_service.dart';
 
 class FoodItemsDropdown extends StatefulWidget {
-  const FoodItemsDropdown({super.key});
+  final Function(DateTime) onItemSelected;
+  const FoodItemsDropdown({
+    super.key,
+    required this.onItemSelected
+  });
 
   @override
   FoodItemsDropdownState createState() => FoodItemsDropdownState();
