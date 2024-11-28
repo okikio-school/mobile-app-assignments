@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/note_model.dart';
+import '../models/scheduled_meal_model.dart';
 import '../services/database_service.dart';
 
 class NewNotesScreen extends StatefulWidget {
   const NewNotesScreen({super.key, required this.onNewNoteCreated});
 
-  final Function(Note) onNewNoteCreated;
+  final Function(ScheduledMeal) onNewNoteCreated;
 
   @override
   State<NewNotesScreen> createState() => _NewNotesScreenState();
@@ -163,7 +163,7 @@ class _NewNotesScreenState extends State<NewNotesScreen> {
           }
 
           // Create the note object
-          final note = Note(
+          final note = ScheduledMeal(
             title: titleController.text,
             content: contentController.text,
             color: selectedColor.value,

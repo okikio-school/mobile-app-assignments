@@ -1,56 +1,45 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:note_me_v2/screens/widgets/fooditems_view.dart';
 import 'package:note_me_v2/services/database_service.dart';
-import '../models/note_model.dart';
+import '../models/scheduled_meal_model.dart';
 
-class NoteView extends StatefulWidget {
-  const NoteView({
+class ScheduledMealView extends StatefulWidget {
+  const ScheduledMealView({
     super.key,
-    required this.note,
-    required this.onNoteUpdated,
-    required this.onNoteDeleted,
+    required this.schedule,
+    required this.onScheduleUpdated,
+    required this.onScheduledDeleted,
   });
 
-  final Note note;
-  final Function(Note) onNoteUpdated;
-  final Function(Note) onNoteDeleted;
+  final ScheduledMeal schedule;
+  final Function(ScheduledMeal) onScheduleUpdated;
+  final Function(ScheduledMeal) onScheduledDeleted;
 
   @override
-  State<NoteView> createState() => _NoteViewState();
+  State<ScheduledMealView> createState() => _ScheduledMealViewState();
 }
 
-class _NoteViewState extends State<NoteView> {
-  late TextEditingController titleController;
-  late TextEditingController contentController;
-  late Color selectedColor;
-  String? imagePath;
+class _ScheduledMealViewState extends State<ScheduledMealView> {
+  late int itemId;
+  late TextEditingController dateController;
+  late TextEditingController costPerDay;
+  late String? foodItemTitle;
 
   @override
   void initState() {
     super.initState();
-    titleController = TextEditingController(text: widget.note.title);
-    contentController = TextEditingController(text: widget.note.content);
-    selectedColor = Color(widget.note.color);
-    imagePath = widget.note.image;
-  }
-
-  Future<void> pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-    await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        imagePath = pickedFile.path;
-      });
-    }
+    itemId = widget.schedule.itemId;
+    dateController = TextEditingController(text: widget.schedule.date);
+    costPerDay = TextEditingController(text: widget.schedule.cost);
+    foodItemTitle = widget.schedule.itemName ?? "Choose a food item";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.note.title),
+        title: Text(widget.schedule.itemName ?? "No food item selected"),
         actions: [
           IconButton(
               onPressed: () {
@@ -60,7 +49,7 @@ class _NoteViewState extends State<NoteView> {
                       return AlertDialog(
                         title: const Text("Are you sure?"),
                         content:
-                        Text("Note '${widget.note.title}' will be deleted"),
+                        Text("Scheduled Meal with food item '${widget.schedule.foodItemTitle}' will be deleted"),
                         actions: [
                           TextButton(
                               onPressed: () {
@@ -71,8 +60,8 @@ class _NoteViewState extends State<NoteView> {
                               onPressed: () {
                                 Navigator.of(context).pop();
                                 DatabaseService.instance
-                                    .deleteNoteById(widget.note.id!);
-                                widget.onNoteDeleted(widget.note);
+                                    .deleteScheduledMealById(widget.schedule.id!);
+                                widget.onScheduledDeleted(widget.schedule);
                                 if (Navigator.of(context).canPop()) {
                                   Navigator.of(context).pop();
                                 }
@@ -86,19 +75,15 @@ class _NoteViewState extends State<NoteView> {
         ],
       ),
       body: Container(
-        color: selectedColor,
         child: Padding(
           padding: const EdgeInsets.all(15.0),
           child: Column(
             children: [
-              TextFormField(
-                controller: titleController,
-                style: const TextStyle(fontSize: 28),
-                decoration: const InputDecoration(
-                    border: InputBorder.none, hintText: "Title"),
+              FoodItemsDropdown(
+                controller: itemId,
               ),
               TextFormField(
-                controller: contentController,
+                controller: dateController,
                 minLines: 5,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
@@ -199,8 +184,8 @@ class _NoteViewState extends State<NoteView> {
       floatingActionButton: FloatingActionButton(
           onPressed: () {
             // Check if the title or content is empty
-            if (titleController.text.isEmpty &&
-                contentController.text.isEmpty) {
+            if (itemId.text.isEmpty &&
+                dateController.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content: Text("Title or content must be provided.")),
@@ -209,24 +194,24 @@ class _NoteViewState extends State<NoteView> {
             }
 
             // Create the note object
-            final note = Note(
-              title: titleController.text,
-              content: contentController.text,
+            final note = ScheduledMeal(
+              title: itemId.text,
+              content: dateController.text,
               color: selectedColor.value,
               image: imagePath,
             );
 
             // Save the note to the database and await the operation
-            DatabaseService.instance.updateNote(
-              widget.note.id!,
-              titleController.text,
-              contentController.text,
+            DatabaseService.instance.updateSchedule(
+              widget.schedule.id!,
+              itemId.text,
+              dateController.text,
               selectedColor.value,
               imagePath,
             );
 
             // Notify HomeScreen and close the NewNotesScreen
-            widget.onNoteUpdated(note);
+            widget.onScheduleUpdated(note);
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             }

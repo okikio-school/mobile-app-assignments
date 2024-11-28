@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:note_me_v2/screens/widgets/note_card.dart';
-import '../models/note_model.dart';
+import 'package:note_me_v2/screens/widgets/scheduled_meal_card.dart';
+import '../models/scheduled_meal_model.dart';
 import '../services/database_service.dart';
 import 'new_notes_screen.dart';
 
@@ -14,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService _databaseService = DatabaseService.instance;
 
-  List<Note> notes = [];
+  List<ScheduledMeal> schedules = [];
   String searchQuery = "";
 
   @override
@@ -24,16 +24,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchNotes() async {
-    final noteData = await _databaseService.fetchAllNotes();
+    final data = await _databaseService.fetchAllScheduledMeals();
     setState(() {
-      notes = noteData.map((e) => Note.fromMap(e)).toList();
+      schedules = data.map((e) => ScheduledMeal.fromMap(e)).toList();
     });
   }
 
-  Future<void> searchNotes(String query) async {
-    final noteData = await _databaseService.searchNotes(query);
+  Future<void> searchDates(DateTime query) async {
+    final schedulesData = await _databaseService.searchScheduleByDate(query);
     setState(() {
-      notes = noteData.map((e) => Note.fromMap(e)).toList();
+      schedules = schedulesData.map((e) => ScheduledMeal.fromMap(e)).toList();
     });
   }
 
@@ -57,14 +57,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   searchQuery = query;
                 });
-                searchNotes(query);
+                searchDates(query);
               },
             ),
           ),
         ),
       ),
       body: Center(
-        child: notes.isEmpty
+        child: schedules.isEmpty
             ? const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -76,16 +76,16 @@ class _HomeScreenState extends State<HomeScreen> {
             : Padding(
           padding: const EdgeInsets.all(15.0),
           child: ListView.builder(
-            itemCount: notes.length,
+            itemCount: schedules.length,
             itemBuilder: (context, index) {
-              return NoteCard(
-                note: notes[index],
+              return ScheduledMealCard(
+                scheduledmeal: schedules[index],
                 index: index,
-                onNoteUpdated: (updatedNote) async {
+                onScheduleUpdated: (updatedNote) async {
                   await fetchNotes();
                 },
-                onNoteDeleted: (deletedNote) async {
-                  await _databaseService.deleteNoteById(deletedNote.id);
+                onScheduleDeleted: (deletedNote) async {
+                  await _databaseService.deleteScheduledMealById(deletedNote.id);
                   await fetchNotes();
                 },
               );
@@ -107,10 +107,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void onNoteDeleted(Note deletedNote) {
+  void onNoteDeleted(ScheduledMeal deletedNote) {
     setState(() {
-      notes.removeWhere((note) => note.id == deletedNote.id);
+      schedules.removeWhere((note) => note.id == deletedNote.id);
     });
-    _databaseService.deleteNoteById(deletedNote.id!);
+    _databaseService.deleteScheduledMealById(deletedNote.id!);
   }
 }
